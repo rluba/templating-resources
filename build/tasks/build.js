@@ -14,8 +14,10 @@ var ts = require('gulp-typescript');
 var gutil = require('gulp-util');
 var gulpIgnore = require('gulp-ignore');
 var merge = require('merge2');
+var args = require('./args');
+
 var jsName = paths.packageName + '.js';
-var compileToModules = ['es2015', 'commonjs', 'amd', 'system', 'native-modules'];
+var compileToModules = args.format || ['es2015', 'commonjs', 'amd', 'system', 'native-modules'];
 
 function cleanGeneratedCode() {
   return through2.obj(function(file, enc, callback) {
