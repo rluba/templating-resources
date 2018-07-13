@@ -1,3 +1,5 @@
+import { updateBindings } from './repeat-utilities';
+
 /**
 * For internal use only. May change without warning.
 */
@@ -18,6 +20,12 @@ export class IfCore {
     // Store parent bindingContext, so we can pass it down
     this.bindingContext = bindingContext;
     this.overrideContext = overrideContext;
+  }
+
+  updateOneTimeBindings() {
+    if (this.view && this.view.isBound) {
+      updateBindings(this.view);
+    }
   }
 
   unbind() {
