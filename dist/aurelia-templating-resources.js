@@ -322,6 +322,28 @@ export function isOneTime(expression) {
 }
 
 /**
+* Forces all one-time bindings in that view to reevaluate.
+*/
+export function updateBindings(view) {
+  let j = view.bindings.length;
+  while (j--) {
+    updateOneTimeBinding(view.bindings[j]);
+  }
+  j = view.controllers.length;
+  while (j--) {
+    let k = view.controllers[j].boundProperties.length;
+    while (k--) {
+      if (view.controllers[j].viewModel && view.controllers[j].viewModel.updateOneTimeBindings) {
+        view.controllers[j].viewModel.updateOneTimeBindings();
+      }
+      let binding = view.controllers[j].boundProperties[k].binding;
+      updateOneTimeBinding(binding);
+    }
+  }
+}
+
+
+/**
 * Forces a binding instance to reevaluate.
 */
 export function updateOneTimeBinding(binding) {
@@ -358,91 +380,6 @@ export class NullRepeatStrategy {
   }
 
   getCollectionObserver(observerLocator, items) {
-  }
-}
-
-/**
-* For internal use only. May change without warning.
-*/
-export class IfCore {
-  constructor(viewFactory, viewSlot) {
-    this.viewFactory = viewFactory;
-    this.viewSlot = viewSlot;
-    this.view = null;
-    this.bindingContext = null;
-    this.overrideContext = null;
-    // If the child view is animated, `value` might not reflect the internal
-    // state anymore, so we use `showing` for that.
-    // Eventually, `showing` and `value` should be consistent.
-    this.showing = false;
-  }
-
-  bind(bindingContext, overrideContext) {
-    // Store parent bindingContext, so we can pass it down
-    this.bindingContext = bindingContext;
-    this.overrideContext = overrideContext;
-  }
-
-  unbind() {
-    if (this.view === null) {
-      return;
-    }
-
-    this.view.unbind();
-
-    // It seems to me that this code is subject to race conditions when animating.
-    // For example a view could be returned to the cache and reused while it's still
-    // attached to the DOM and animated.
-    if (!this.viewFactory.isCaching) {
-      return;
-    }
-
-    if (this.showing) {
-      this.showing = false;
-      this.viewSlot.remove(this.view, /*returnToCache:*/true, /*skipAnimation:*/true);
-    } else {
-      this.view.returnToCache();
-    }
-
-    this.view = null;
-  }
-
-  _show() {
-    if (this.showing) {
-      // Ensures the view is bound.
-      // It might not be the case when the if was unbound but not detached, then rebound.
-      // Typical case where this happens is nested ifs
-      if (!this.view.isBound) {
-        this.view.bind(this.bindingContext, this.overrideContext);
-      }
-      return;
-    }
-
-    if (this.view === null) {
-      this.view = this.viewFactory.create();
-    }
-
-    if (!this.view.isBound) {
-      this.view.bind(this.bindingContext, this.overrideContext);
-    }
-
-    this.showing = true;
-    return this.viewSlot.add(this.view); // Promise or void
-  }
-
-  _hide() {
-    if (!this.showing) {
-      return;
-    }
-
-    this.showing = false;
-    let removed = this.viewSlot.remove(this.view); // Promise or View
-
-    if (removed instanceof Promise) {
-      return removed.then(() => this.view.unbind());
-    }
-
-    this.view.unbind();
   }
 }
 
@@ -1002,7 +939,8 @@ function behaviorRequiresLifecycle(instruction) {
   let name = t.elementName !== null ? t.elementName : t.attributeName;
   return lifecycleOptionalBehaviors.indexOf(name) === -1 && (t.handlesAttached || t.handlesBind || t.handlesCreated || t.handlesDetached || t.handlesUnbind)
     || t.viewFactory && viewsRequireLifecycle(t.viewFactory)
-    || instruction.viewFactory && viewsRequireLifecycle(instruction.viewFactory);
+    || instruction.viewFactory && viewsRequireLifecycle(instruction.viewFactory)
+    || instruction.initiatedByBehavior;
 }
 
 function targetRequiresLifecycle(instruction) {
@@ -1440,6 +1378,97 @@ export class ArrayRepeatStrategy {
 }
 
 /**
+* For internal use only. May change without warning.
+*/
+export class IfCore {
+  constructor(viewFactory, viewSlot) {
+    this.viewFactory = viewFactory;
+    this.viewSlot = viewSlot;
+    this.view = null;
+    this.bindingContext = null;
+    this.overrideContext = null;
+    // If the child view is animated, `value` might not reflect the internal
+    // state anymore, so we use `showing` for that.
+    // Eventually, `showing` and `value` should be consistent.
+    this.showing = false;
+  }
+
+  bind(bindingContext, overrideContext) {
+    // Store parent bindingContext, so we can pass it down
+    this.bindingContext = bindingContext;
+    this.overrideContext = overrideContext;
+  }
+
+  updateOneTimeBindings() {
+    if (this.view && this.view.isBound) {
+      updateBindings(this.view);
+    }
+  }
+
+  unbind() {
+    if (this.view === null) {
+      return;
+    }
+
+    this.view.unbind();
+
+    // It seems to me that this code is subject to race conditions when animating.
+    // For example a view could be returned to the cache and reused while it's still
+    // attached to the DOM and animated.
+    if (!this.viewFactory.isCaching) {
+      return;
+    }
+
+    if (this.showing) {
+      this.showing = false;
+      this.viewSlot.remove(this.view, /*returnToCache:*/true, /*skipAnimation:*/true);
+    } else {
+      this.view.returnToCache();
+    }
+
+    this.view = null;
+  }
+
+  _show() {
+    if (this.showing) {
+      // Ensures the view is bound.
+      // It might not be the case when the if was unbound but not detached, then rebound.
+      // Typical case where this happens is nested ifs
+      if (!this.view.isBound) {
+        this.view.bind(this.bindingContext, this.overrideContext);
+      }
+      return;
+    }
+
+    if (this.view === null) {
+      this.view = this.viewFactory.create();
+    }
+
+    if (!this.view.isBound) {
+      this.view.bind(this.bindingContext, this.overrideContext);
+    }
+
+    this.showing = true;
+    return this.viewSlot.add(this.view); // Promise or void
+  }
+
+  _hide() {
+    if (!this.showing) {
+      return;
+    }
+
+    this.showing = false;
+    let removed = this.viewSlot.remove(this.view); // Promise or View
+
+    if (removed instanceof Promise) {
+      return removed.then(() => this.view.unbind());
+    }
+
+    this.view.unbind();
+  }
+}
+
+/**
 * A strategy for repeating a template over a Map.
 */
 export class MapRepeatStrategy {
@@ -1706,112 +1735,6 @@ export class SetRepeatStrategy {
   }
 }
 
-@customAttribute('else')
-@templateController
-@inject(BoundViewFactory, ViewSlot)
-export class Else extends IfCore {
-  constructor(viewFactory, viewSlot) {
-    super(viewFactory, viewSlot);
-    this._registerInIf();
-  }
-
-  bind(bindingContext, overrideContext) {
-    super.bind(bindingContext, overrideContext);
-    // Render on initial
-    if (this.ifVm.condition) {
-      this._hide();
-    } else {
-      this._show();
-    }
-  }
-
-  _registerInIf() {
-    // We support the pattern <div if.bind="x"></div><div else></div>.
-    // Obvisouly between the two, we must accepts text (spaces) and comments.
-    // The `if` node is expected to be a comment anchor, because of `@templateController`.
-    // To simplify the code we basically walk up to the first Aurelia predecessor,
-    // so having static tags in between (no binding) would work but is not intended to be supported.
-    let previous = this.viewSlot.anchor.previousSibling;
-    while (previous && !previous.au) {
-      previous = previous.previousSibling;
-    }
-    if (!previous || !previous.au.if) {
-      throw new Error("Can't find matching If for Else custom attribute.");
-    }
-    this.ifVm = previous.au.if.viewModel;
-    this.ifVm.elseVm = this;
-  }
-}
-
-/**
-* Binding to conditionally include or not include template logic depending on returned result
-* - value should be Boolean or will be treated as such (truthy / falsey)
-*/
-@customAttribute('if')
-@templateController
-@inject(BoundViewFactory, ViewSlot)
-export class If extends IfCore {
-  @bindable({ primaryProperty: true }) condition: any;
-  @bindable swapOrder: "before"|"with"|"after";
-
-  /**
-  * Binds the if to the binding context and override context
-  * @param bindingContext The binding context
-  * @param overrideContext An override context for binding.
-  */
-  bind(bindingContext, overrideContext) {
-    super.bind(bindingContext, overrideContext);
-    if (this.condition) {
-      this._show();
-    } else {
-      this._hide();
-    }
-  }
-
-  /**
-  * Invoked everytime value property changes.
-  * @param newValue The new value
-  */
-  conditionChanged(newValue) {
-    this._update(newValue);
-  }
-
-  _update(show) {
-    if (this.animating) {
-      return;
-    }
-
-    let promise;
-    if (this.elseVm) {
-      promise = show ? this._swap(this.elseVm, this) : this._swap(this, this.elseVm);
-    } else {
-      promise = show ? this._show() : this._hide();
-    }
-
-    if (promise) {
-      this.animating = true;
-      promise.then(() => {
-        this.animating = false;
-        if (this.condition !== this.showing) {
-          this._update(this.condition);
-        }
-      });
-    }
-  }
-
-  _swap(remove, add) {
-    switch (this.swapOrder) {
-    case 'before':
-      return Promise.resolve(add._show()).then(() => remove._hide());
-    case 'with':
-      return Promise.all([ remove._hide(), add._show() ]);
-    default:  // "after", default and unknown values
-      let promise = remove._hide();
-      return promise ? promise.then(() => add._show()) : add._show();
-    }
-  }
-}
-
 /**
 * Simple html sanitization converter to preserve whitelisted elements and attributes on a bound property containing html.
 */
@@ -2013,6 +1936,112 @@ export class Show {
   */
   bind(bindingContext) {
     this.valueChanged(this.value);
+  }
+}
+
+@customAttribute('else')
+@templateController
+@inject(BoundViewFactory, ViewSlot)
+export class Else extends IfCore {
+  constructor(viewFactory, viewSlot) {
+    super(viewFactory, viewSlot);
+    this._registerInIf();
+  }
+
+  bind(bindingContext, overrideContext) {
+    super.bind(bindingContext, overrideContext);
+    // Render on initial
+    if (this.ifVm.condition) {
+      this._hide();
+    } else {
+      this._show();
+    }
+  }
+
+  _registerInIf() {
+    // We support the pattern <div if.bind="x"></div><div else></div>.
+    // Obvisouly between the two, we must accepts text (spaces) and comments.
+    // The `if` node is expected to be a comment anchor, because of `@templateController`.
+    // To simplify the code we basically walk up to the first Aurelia predecessor,
+    // so having static tags in between (no binding) would work but is not intended to be supported.
+    let previous = this.viewSlot.anchor.previousSibling;
+    while (previous && !previous.au) {
+      previous = previous.previousSibling;
+    }
+    if (!previous || !previous.au.if) {
+      throw new Error("Can't find matching If for Else custom attribute.");
+    }
+    this.ifVm = previous.au.if.viewModel;
+    this.ifVm.elseVm = this;
+  }
+}
+
+/**
+* Binding to conditionally include or not include template logic depending on returned result
+* - value should be Boolean or will be treated as such (truthy / falsey)
+*/
+@customAttribute('if')
+@templateController
+@inject(BoundViewFactory, ViewSlot)
+export class If extends IfCore {
+  @bindable({ primaryProperty: true }) condition: any;
+  @bindable swapOrder: "before"|"with"|"after";
+
+  /**
+  * Binds the if to the binding context and override context
+  * @param bindingContext The binding context
+  * @param overrideContext An override context for binding.
+  */
+  bind(bindingContext, overrideContext) {
+    super.bind(bindingContext, overrideContext);
+    if (this.condition) {
+      this._show();
+    } else {
+      this._hide();
+    }
+  }
+
+  /**
+  * Invoked everytime value property changes.
+  * @param newValue The new value
+  */
+  conditionChanged(newValue) {
+    this._update(newValue);
+  }
+
+  _update(show) {
+    if (this.animating) {
+      return;
+    }
+
+    let promise;
+    if (this.elseVm) {
+      promise = show ? this._swap(this.elseVm, this) : this._swap(this, this.elseVm);
+    } else {
+      promise = show ? this._show() : this._hide();
+    }
+
+    if (promise) {
+      this.animating = true;
+      promise.then(() => {
+        this.animating = false;
+        if (this.condition !== this.showing) {
+          this._update(this.condition);
+        }
+      });
+    }
+  }
+
+  _swap(remove, add) {
+    switch (this.swapOrder) {
+    case 'before':
+      return Promise.resolve(add._show()).then(() => remove._hide());
+    case 'with':
+      return Promise.all([ remove._hide(), add._show() ]);
+    default:  // "after", default and unknown values
+      let promise = remove._hide();
+      return promise ? promise.then(() => add._show()) : add._show();
+    }
   }
 }
 
@@ -2320,17 +2349,6 @@ export class Repeat extends AbstractRepeater {
   }
 
   updateBindings(view: View) {
-    let j = view.bindings.length;
-    while (j--) {
-      updateOneTimeBinding(view.bindings[j]);
-    }
-    j = view.controllers.length;
-    while (j--) {
-      let k = view.controllers[j].boundProperties.length;
-      while (k--) {
-        let binding = view.controllers[j].boundProperties[k].binding;
-        updateOneTimeBinding(binding);
-      }
-    }
+    updateBindings(view);
   }
 }

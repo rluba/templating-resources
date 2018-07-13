@@ -3,7 +3,7 @@
 System.register(['aurelia-dependency-injection', 'aurelia-binding', 'aurelia-templating', './repeat-strategy-locator', './repeat-utilities', './analyze-view-factory', './abstract-repeater'], function (_export, _context) {
   "use strict";
 
-  var inject, ObserverLocator, BoundViewFactory, TargetInstruction, ViewSlot, ViewResources, customAttribute, bindable, templateController, RepeatStrategyLocator, getItemsSourceExpression, unwrapExpression, isOneTime, updateOneTimeBinding, viewsRequireLifecycle, AbstractRepeater, _dec, _dec2, _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3, _descriptor4, Repeat;
+  var inject, ObserverLocator, BoundViewFactory, TargetInstruction, ViewSlot, ViewResources, customAttribute, bindable, templateController, RepeatStrategyLocator, getItemsSourceExpression, unwrapExpression, isOneTime, _updateBindings, viewsRequireLifecycle, AbstractRepeater, _dec, _dec2, _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3, _descriptor4, Repeat;
 
   function _initDefineProp(target, property, descriptor, context) {
     if (!descriptor) return;
@@ -93,7 +93,7 @@ System.register(['aurelia-dependency-injection', 'aurelia-binding', 'aurelia-tem
       getItemsSourceExpression = _repeatUtilities.getItemsSourceExpression;
       unwrapExpression = _repeatUtilities.unwrapExpression;
       isOneTime = _repeatUtilities.isOneTime;
-      updateOneTimeBinding = _repeatUtilities.updateOneTimeBinding;
+      _updateBindings = _repeatUtilities.updateBindings;
     }, function (_analyzeViewFactory) {
       viewsRequireLifecycle = _analyzeViewFactory.viewsRequireLifecycle;
     }, function (_abstractRepeater) {
@@ -316,18 +316,7 @@ System.register(['aurelia-dependency-injection', 'aurelia-binding', 'aurelia-tem
         };
 
         Repeat.prototype.updateBindings = function updateBindings(view) {
-          var j = view.bindings.length;
-          while (j--) {
-            updateOneTimeBinding(view.bindings[j]);
-          }
-          j = view.controllers.length;
-          while (j--) {
-            var k = view.controllers[j].boundProperties.length;
-            while (k--) {
-              var binding = view.controllers[j].boundProperties[k].binding;
-              updateOneTimeBinding(binding);
-            }
-          }
+          _updateBindings(view);
         };
 
         return Repeat;

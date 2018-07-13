@@ -1,9 +1,10 @@
-define(["exports"], function (exports) {
-  "use strict";
+define(['exports', './repeat-utilities'], function (exports, _repeatUtilities) {
+  'use strict';
 
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
+  exports.IfCore = undefined;
 
   
 
@@ -23,6 +24,12 @@ define(["exports"], function (exports) {
     IfCore.prototype.bind = function bind(bindingContext, overrideContext) {
       this.bindingContext = bindingContext;
       this.overrideContext = overrideContext;
+    };
+
+    IfCore.prototype.updateOneTimeBindings = function updateOneTimeBindings() {
+      if (this.view && this.view.isBound) {
+        (0, _repeatUtilities.updateBindings)(this.view);
+      }
     };
 
     IfCore.prototype.unbind = function unbind() {

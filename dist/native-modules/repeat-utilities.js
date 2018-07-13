@@ -69,6 +69,24 @@ export function isOneTime(expression) {
   return false;
 }
 
+export function updateBindings(view) {
+  var j = view.bindings.length;
+  while (j--) {
+    updateOneTimeBinding(view.bindings[j]);
+  }
+  j = view.controllers.length;
+  while (j--) {
+    var k = view.controllers[j].boundProperties.length;
+    while (k--) {
+      if (view.controllers[j].viewModel && view.controllers[j].viewModel.updateOneTimeBindings) {
+        view.controllers[j].viewModel.updateOneTimeBindings();
+      }
+      var binding = view.controllers[j].boundProperties[k].binding;
+      updateOneTimeBinding(binding);
+    }
+  }
+}
+
 export function updateOneTimeBinding(binding) {
   if (binding.call && binding.mode === oneTime) {
     binding.call(sourceContext);

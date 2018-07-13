@@ -47,7 +47,7 @@ import { inject } from 'aurelia-dependency-injection';
 import { ObserverLocator } from 'aurelia-binding';
 import { BoundViewFactory, TargetInstruction, ViewSlot, ViewResources, customAttribute, bindable, templateController } from 'aurelia-templating';
 import { RepeatStrategyLocator } from './repeat-strategy-locator';
-import { getItemsSourceExpression, unwrapExpression, isOneTime, updateOneTimeBinding } from './repeat-utilities';
+import { getItemsSourceExpression, unwrapExpression, isOneTime, updateBindings } from './repeat-utilities';
 import { viewsRequireLifecycle } from './analyze-view-factory';
 import { AbstractRepeater } from './abstract-repeater';
 
@@ -253,18 +253,7 @@ export let Repeat = (_dec = customAttribute('repeat'), _dec2 = inject(BoundViewF
   }
 
   updateBindings(view) {
-    let j = view.bindings.length;
-    while (j--) {
-      updateOneTimeBinding(view.bindings[j]);
-    }
-    j = view.controllers.length;
-    while (j--) {
-      let k = view.controllers[j].boundProperties.length;
-      while (k--) {
-        let binding = view.controllers[j].boundProperties[k].binding;
-        updateOneTimeBinding(binding);
-      }
-    }
+    updateBindings(view);
   }
 }, (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'items', [bindable], {
   enumerable: true,

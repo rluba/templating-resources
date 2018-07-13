@@ -1,5 +1,7 @@
 
 
+import { updateBindings } from './repeat-utilities';
+
 export var IfCore = function () {
   function IfCore(viewFactory, viewSlot) {
     
@@ -16,6 +18,12 @@ export var IfCore = function () {
   IfCore.prototype.bind = function bind(bindingContext, overrideContext) {
     this.bindingContext = bindingContext;
     this.overrideContext = overrideContext;
+  };
+
+  IfCore.prototype.updateOneTimeBindings = function updateOneTimeBindings() {
+    if (this.view && this.view.isBound) {
+      updateBindings(this.view);
+    }
   };
 
   IfCore.prototype.unbind = function unbind() {

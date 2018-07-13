@@ -9,6 +9,7 @@ exports.updateOverrideContext = updateOverrideContext;
 exports.getItemsSourceExpression = getItemsSourceExpression;
 exports.unwrapExpression = unwrapExpression;
 exports.isOneTime = isOneTime;
+exports.updateBindings = updateBindings;
 exports.updateOneTimeBinding = updateOneTimeBinding;
 exports.indexOf = indexOf;
 
@@ -81,6 +82,24 @@ function isOneTime(expression) {
     expression = expression.expression;
   }
   return false;
+}
+
+function updateBindings(view) {
+  var j = view.bindings.length;
+  while (j--) {
+    updateOneTimeBinding(view.bindings[j]);
+  }
+  j = view.controllers.length;
+  while (j--) {
+    var k = view.controllers[j].boundProperties.length;
+    while (k--) {
+      if (view.controllers[j].viewModel && view.controllers[j].viewModel.updateOneTimeBindings) {
+        view.controllers[j].viewModel.updateOneTimeBindings();
+      }
+      var binding = view.controllers[j].boundProperties[k].binding;
+      updateOneTimeBinding(binding);
+    }
+  }
 }
 
 function updateOneTimeBinding(binding) {

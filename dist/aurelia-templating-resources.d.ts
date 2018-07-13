@@ -168,6 +168,11 @@ export declare function unwrapExpression(expression?: any): any;
 export declare function isOneTime(expression?: any): any;
 
 /**
+* Forces all one-time bindings in that view to reevaluate.
+*/
+export declare function updateBindings(view?: any): any;
+
+/**
 * Forces a binding instance to reevaluate.
 */
 export declare function updateOneTimeBinding(binding?: any): any;
@@ -183,15 +188,6 @@ export declare function indexOf(array?: any, item?: any, matcher?: any, startInd
 export declare class NullRepeatStrategy {
   instanceChanged(repeat?: any, items?: any): any;
   getCollectionObserver(observerLocator?: any, items?: any): any;
-}
-
-/**
-* For internal use only. May change without warning.
-*/
-export declare class IfCore {
-  constructor(viewFactory?: any, viewSlot?: any);
-  bind(bindingContext?: any, overrideContext?: any): any;
-  unbind(): any;
 }
 
 /**
@@ -466,6 +462,16 @@ export declare class ArrayRepeatStrategy {
 }
 
 /**
+* For internal use only. May change without warning.
+*/
+export declare class IfCore {
+  constructor(viewFactory?: any, viewSlot?: any);
+  bind(bindingContext?: any, overrideContext?: any): any;
+  updateOneTimeBindings(): any;
+  unbind(): any;
+}
+
+/**
 * A strategy for repeating a template over a Map.
 */
 export declare class MapRepeatStrategy {
@@ -531,32 +537,6 @@ export declare class SetRepeatStrategy {
     * @param records The change records.
     */
   instanceMutated(repeat?: any, set?: any, records?: any): any;
-}
-export declare class Else extends IfCore {
-  constructor(viewFactory?: any, viewSlot?: any);
-  bind(bindingContext?: any, overrideContext?: any): any;
-}
-
-/**
-* Binding to conditionally include or not include template logic depending on returned result
-* - value should be Boolean or will be treated as such (truthy / falsey)
-*/
-export declare class If extends IfCore {
-  condition: any;
-  swapOrder: 'before' | 'with' | 'after';
-  
-  /**
-    * Binds the if to the binding context and override context
-    * @param bindingContext The binding context
-    * @param overrideContext An override context for binding.
-    */
-  bind(bindingContext?: any, overrideContext?: any): any;
-  
-  /**
-    * Invoked everytime value property changes.
-    * @param newValue The new value
-    */
-  conditionChanged(newValue?: any): any;
 }
 
 /**
@@ -648,6 +628,32 @@ export declare class Show {
     * Binds the Show attribute.
     */
   bind(bindingContext?: any): any;
+}
+export declare class Else extends IfCore {
+  constructor(viewFactory?: any, viewSlot?: any);
+  bind(bindingContext?: any, overrideContext?: any): any;
+}
+
+/**
+* Binding to conditionally include or not include template logic depending on returned result
+* - value should be Boolean or will be treated as such (truthy / falsey)
+*/
+export declare class If extends IfCore {
+  condition: any;
+  swapOrder: 'before' | 'with' | 'after';
+  
+  /**
+    * Binds the if to the binding context and override context
+    * @param bindingContext The binding context
+    * @param overrideContext An override context for binding.
+    */
+  bind(bindingContext?: any, overrideContext?: any): any;
+  
+  /**
+    * Invoked everytime value property changes.
+    * @param newValue The new value
+    */
+  conditionChanged(newValue?: any): any;
 }
 
 /**

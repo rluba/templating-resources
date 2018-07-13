@@ -1,16 +1,18 @@
-"use strict";
+'use strict';
 
-System.register([], function (_export, _context) {
+System.register(['./repeat-utilities'], function (_export, _context) {
   "use strict";
 
-  var IfCore;
+  var updateBindings, IfCore;
 
   
 
   return {
-    setters: [],
+    setters: [function (_repeatUtilities) {
+      updateBindings = _repeatUtilities.updateBindings;
+    }],
     execute: function () {
-      _export("IfCore", IfCore = function () {
+      _export('IfCore', IfCore = function () {
         function IfCore(viewFactory, viewSlot) {
           
 
@@ -26,6 +28,12 @@ System.register([], function (_export, _context) {
         IfCore.prototype.bind = function bind(bindingContext, overrideContext) {
           this.bindingContext = bindingContext;
           this.overrideContext = overrideContext;
+        };
+
+        IfCore.prototype.updateOneTimeBindings = function updateOneTimeBindings() {
+          if (this.view && this.view.isBound) {
+            updateBindings(this.view);
+          }
         };
 
         IfCore.prototype.unbind = function unbind() {
@@ -91,7 +99,7 @@ System.register([], function (_export, _context) {
         return IfCore;
       }());
 
-      _export("IfCore", IfCore);
+      _export('IfCore', IfCore);
     }
   };
 });

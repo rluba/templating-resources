@@ -1,3 +1,4 @@
+import { updateBindings } from './repeat-utilities';
 
 export let IfCore = class IfCore {
   constructor(viewFactory, viewSlot) {
@@ -13,6 +14,12 @@ export let IfCore = class IfCore {
   bind(bindingContext, overrideContext) {
     this.bindingContext = bindingContext;
     this.overrideContext = overrideContext;
+  }
+
+  updateOneTimeBindings() {
+    if (this.view && this.view.isBound) {
+      updateBindings(this.view);
+    }
   }
 
   unbind() {
